@@ -1,35 +1,44 @@
-# Aurelia — Premium Landing Page
+# AndroGRAM
 
-A stunning, modern, single-page professional landing page built with pure HTML, CSS, and JavaScript.
+Premium single-page marketing site + Firebase-authenticated workspace.
 
 ## Features
 
-- **Premium dark theme** with glassmorphism, soft gradients, and glow effects
-- **Animated particle background** + floating gradient orbs
-- **Sticky transparent navbar** with blur on scroll
-- **Two CTAs:** Premium Subscribe · Buy Services (ripple + hover glow)
-- **Fully responsive** — desktop, tablet, mobile
-- **SEO-friendly** semantic HTML and meta tags
-- **No frameworks, no backend** — static frontend only
+- **AndroGRAM brand** — dark, modern flagship landing experience
+- **Firebase Authentication** — email/password sign up & log in
+- **Protected app area** — Dashboard, Profile (route guards)
+- **Session persistence** — stays signed in across reloads
+- **Responsive sidebar** — includes “New Project (Coming Soon)”
+- **Static frontend** — HTML, CSS, JS only (Firebase client SDK)
 
-## Stack
+## Pages
 
-- HTML5
-- CSS3 (custom properties, backdrop-filter, keyframes)
-- Vanilla JavaScript (canvas particles, reveal, ripple)
+| Page | Access |
+|------|--------|
+| `index.html` | Public landing (redirects if signed in) |
+| `login.html` / `signup.html` | Public auth |
+| `dashboard.html` | Protected |
+| `profile.html` | Protected |
+
+## Firebase
+
+- Project: `abedin-eb675`
+- Web app: AndroGRAM Web
+- Provider: Email/Password
+
+If auth fails with `auth/unauthorized-domain` on a custom host, add the domain under  
+Firebase Console → Authentication → Settings → Authorized domains.
 
 ## Local preview
 
-Open `index.html` in a browser, or serve the folder:
+Serve over HTTP (modules require a server):
 
 ```bash
 npx serve .
 ```
 
+Open `http://localhost:3000` (or the port shown).
+
 ## Deploy
 
-Static site — works on **Vercel**, Netlify, GitHub Pages, or any static host.
-
-## License
-
-© Aurelia. All rights reserved.
+Static deploy to **Vercel** or Firebase Hosting.

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#070b10" />
+  <title>Dashboard — AndroGRAM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop stop-color='%233ddc84'/><stop offset='1' stop-color='%2322d3ee'/></linearGradient></defs><rect width='100' height='100' rx='22' fill='%070b10'/><circle cx='50' cy='50' r='28' fill='url(%23g)'/></svg>" />
+</head>
+<body class="app-body">
+  <div class="app-gate" id="app-gate">
+    <div class="spinner" aria-hidden="true"></div>
+  </div>
+
+  <div class="sidebar-overlay" id="sidebar-overlay" hidden></div>
+
+  <div class="app-shell" id="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+      <a href="dashboard.html" class="sidebar-brand">
+        <span class="logo-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M7 9a5 5 0 0 1 10 0v7a3 3 0 0 1-3 3h-4a3 3 0 0 1-3-3V9z" fill="currentColor"/><circle cx="9.5" cy="11" r="1" fill="#04120a"/><circle cx="14.5" cy="11" r="1" fill="#04120a"/></svg>
+        </span>
+        <span class="logo-text">Andro<span>GRAM</span></span>
+      </a>
+
+      <nav class="sidebar-nav">
+        <a href="dashboard.html" class="nav-item active" data-nav="dashboard">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+          Dashboard
+        </a>
+        <a href="profile.html" class="nav-item" data-nav="profile">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-4 0-7 2-7 4.5V20h14v-1.5C19 16 16 14 12 14z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+          Profile
+        </a>
+        <div class="nav-item coming-soon" role="note" title="Coming soon" data-nav="new-project">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          New Project
+          <span class="nav-badge">Soon</span>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-chip">
+          <div class="user-avatar" id="user-avatar">AG</div>
+          <div class="user-meta">
+            <div class="user-name" id="user-name">User</div>
+            <div class="user-email" id="user-email">—</div>
+          </div>
+        </div>
+        <button type="button" class="btn-logout" id="logout-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Log out
+        </button>
+      </div>
+    </aside>
+
+    <div class="main-wrap">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button type="button" class="menu-toggle" id="menu-toggle" aria-label="Open menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+          <h1 class="page-title">Dashboard</h1>
+        </div>
+        <div class="topbar-right">
+          <span class="status-pill">Session active</span>
+        </div>
+      </header>
+
+      <main class="content">
+        <section class="welcome-card">
+          <h1>Welcome back, <span id="welcome-name">there</span></h1>
+          <p>
+            You’re signed in to AndroGRAM. Use the sidebar to open your profile
+            or explore what’s next — new projects are on the way.
+          </p>
+        </section>
+
+        <section class="grid-stats" aria-label="Overview stats">
+          <article class="stat-card">
+            <div class="label">Workspace</div>
+            <div class="value">Active</div>
+          </article>
+          <article class="stat-card">
+            <div class="label">Auth</div>
+            <div class="value">Firebase</div>
+          </article>
+          <article class="stat-card">
+            <div class="label">Projects</div>
+            <div class="value">Soon</div>
+          </article>
+        </section>
+
+        <section class="panel-card">
+          <h2>Getting started</h2>
+          <p>
+            Your account is protected with Firebase Authentication. Sessions persist
+            across page reloads. Visit Profile to review your account details, or watch
+            for <strong>New Project</strong> when it launches.
+          </p>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="js/dashboard.js"></script>
+</body>
+</html>

@@ -1,29 +1,32 @@
 /**
- * Aurelia — Premium Landing Page
- * Particles · Navbar · Reveal · Ripple · CTA toasts
+ * AndroGRAM — Landing page
+ * Redirects authenticated users to Dashboard; particles + UI polish.
  */
+import { waitForAuth, DASHBOARD_PATH } from "./auth.js";
 
-(() => {
-  "use strict";
+const loader = document.getElementById("page-loader");
+const yearEl = document.getElementById("year");
+if (yearEl) yearEl.textContent = String(new Date().getFullYear());
 
-  /* ---------- Year ---------- */
-  const yearEl = document.getElementById("year");
-  if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+// Session restore → skip landing if already signed in
+waitForAuth().then((user) => {
+  if (user) {
+    window.location.replace(DASHBOARD_PATH);
+    return;
+  }
+  loader?.classList.add("hidden");
+  initLandingUI();
+});
 
-  /* ---------- Sticky navbar glass on scroll ---------- */
+function initLandingUI() {
+  /* Sticky navbar */
   const navbar = document.getElementById("navbar");
   let ticking = false;
-
   const onScroll = () => {
     if (!navbar) return;
-    if (window.scrollY > 24) {
-      navbar.classList.add("scrolled");
-    } else {
-      navbar.classList.remove("scrolled");
-    }
+    navbar.classList.toggle("scrolled", window.scrollY > 24);
     ticking = false;
   };
-
   window.addEventListener(
     "scroll",
     () => {
@@ -36,46 +39,30 @@
   );
   onScroll();
 
-  /* ---------- Smooth scroll for anchor links ---------- */
-  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
-    anchor.addEventListener("click", (e) => {
-      const id = anchor.getAttribute("href");
-      if (!id || id === "#") return;
-      const target = document.querySelector(id);
-      if (!target) return;
-      e.preventDefault();
-      const offset = navbar ? navbar.offsetHeight : 0;
-      const top = target.getBoundingClientRect().top + window.scrollY - offset + 8;
-      window.scrollTo({ top, behavior: "smooth" });
-    });
-  });
-
-  /* ---------- Reveal on load / intersection ---------- */
+  /* Reveal */
   const revealEls = document.querySelectorAll(".reveal");
-
-  const showReveal = (el) => {
+  const show = (el) => {
     const delay = Number(el.dataset.delay || 0);
     setTimeout(() => el.classList.add("visible"), delay);
   };
-
   if ("IntersectionObserver" in window) {
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            showReveal(entry.target);
+            show(entry.target);
             io.unobserve(entry.target);
           }
         });
       },
-      { threshold: 0.12, rootMargin: "0px 0px -40px 0px" }
+      { threshold: 0.12 }
     );
     revealEls.forEach((el) => io.observe(el));
   } else {
-    revealEls.forEach(showReveal);
+    revealEls.forEach(show);
   }
 
-  /* ---------- Button ripple ---------- */
+  /* Ripple on buttons */
   document.querySelectorAll("[data-ripple]").forEach((btn) => {
     btn.addEventListener("click", function (e) {
       const rect = this.getBoundingClientRect();
@@ -90,46 +77,15 @@
     });
   });
 
-  /* ---------- Toast ---------- */
-  const toast = document.getElementById("toast");
-  const toastText = document.getElementById("toast-text");
-  let toastTimer;
+  initParticles();
+}
 
-  const showToast = (message) => {
-    if (!toast || !toastText) return;
-    toastText.textContent = message;
-    toast.hidden = false;
-    requestAnimationFrame(() => toast.classList.add("show"));
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => {
-      toast.classList.remove("show");
-      setTimeout(() => {
-        toast.hidden = true;
-      }, 450);
-    }, 2800);
-  };
-
-  const btnSubscribe = document.getElementById("btn-subscribe");
-  const btnServices = document.getElementById("btn-services");
-
-  if (btnSubscribe) {
-    btnSubscribe.addEventListener("click", () => {
-      showToast("Premium Subscribe — coming soon. Thank you for your interest.");
-    });
-  }
-
-  if (btnServices) {
-    btnServices.addEventListener("click", () => {
-      showToast("Buy Services — curated packages launching shortly.");
-    });
-  }
-
-  /* ---------- Particle canvas ---------- */
+function initParticles() {
   const canvas = document.getElementById("particles");
   if (!canvas || !canvas.getContext) return;
 
   const ctx = canvas.getContext("2d");
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let particles = [];
   let animId = null;
   let w = 0;
@@ -137,11 +93,11 @@
   let dpr = 1;
 
   const config = {
-    count: reducedMotion ? 18 : 55,
-    maxR: 2.2,
+    count: reduced ? 16 : 52,
+    maxR: 2.1,
     minR: 0.4,
-    speed: reducedMotion ? 0.15 : 0.35,
-    connectDist: 110,
+    speed: reduced ? 0.12 : 0.32,
+    connectDist: 105,
   };
 
   function resize() {
@@ -169,25 +125,20 @@
 
   function draw() {
     ctx.clearRect(0, 0, w, h);
-
     for (let i = 0; i < particles.length; i++) {
       const p = particles[i];
       p.x += p.vx;
       p.y += p.vy;
-
       if (p.x < 0) p.x = w;
       else if (p.x > w) p.x = 0;
       if (p.y < 0) p.y = h;
       else if (p.y > h) p.y = 0;
-
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(167, 139, 250, ${p.a})`;
+      ctx.fillStyle = `rgba(61, 220, 132, ${p.a})`;
       ctx.fill();
     }
-
-    // Soft connection lines
-    if (!reducedMotion) {
+    if (!reduced) {
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
           const a = particles[i];
@@ -200,14 +151,13 @@
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
             ctx.lineTo(b.x, b.y);
-            ctx.strokeStyle = `rgba(96, 165, 250, ${alpha})`;
+            ctx.strokeStyle = `rgba(34, 211, 238, ${alpha})`;
             ctx.lineWidth = 0.6;
             ctx.stroke();
           }
         }
       }
     }
-
     animId = requestAnimationFrame(draw);
   }
 
@@ -236,4 +186,4 @@
       draw();
     }
   });
-})();
+}
