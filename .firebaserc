@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "abedin-eb675"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }

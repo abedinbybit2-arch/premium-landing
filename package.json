@@ -1,0 +1,9 @@
+{
+  "name": "androgram",
+  "version": "1.1.0",
+  "private": true,
+  "description": "AndroGRAM — premium landing + Firebase auth + Telegram automation",
+  "scripts": {
+    "start": "npx serve ."
+  }
+}

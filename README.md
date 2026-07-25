@@ -1,44 +1,31 @@
 # AndroGRAM
 
-Premium single-page marketing site + Firebase-authenticated workspace.
+Premium landing + Firebase Auth + Telegram Automation (Firestore-backed).
 
 ## Features
 
-- **AndroGRAM brand** — dark, modern flagship landing experience
-- **Firebase Authentication** — email/password sign up & log in
-- **Protected app area** — Dashboard, Profile (route guards)
-- **Session persistence** — stays signed in across reloads
-- **Responsive sidebar** — includes “New Project (Coming Soon)”
-- **Static frontend** — HTML, CSS, JS only (Firebase client SDK)
+- **AndroGRAM brand** — dark, modern flagship landing
+- **Firebase Authentication** — email/password, session persistence
+- **Protected app** — Dashboard, Profile, Telegram Automation
+- **Telegram Automation** — connect bot by token, list groups, send text/photo to selected or all groups
+- **Firestore** — bots & groups saved per user account and per bot ID (device sync)
 
 ## Pages
 
 | Page | Access |
 |------|--------|
-| `index.html` | Public landing (redirects if signed in) |
+| `index.html` | Public landing |
 | `login.html` / `signup.html` | Public auth |
 | `dashboard.html` | Protected |
 | `profile.html` | Protected |
+| `telegram.html` | Protected — Telegram Automation |
 
-## Firebase
+## Firebase usage
 
+- **Auth** + **Firestore** only (no Firebase Hosting required for production)
 - Project: `abedin-eb675`
-- Web app: AndroGRAM Web
-- Provider: Email/Password
-
-If auth fails with `auth/unauthorized-domain` on a custom host, add the domain under  
-Firebase Console → Authentication → Settings → Authorized domains.
-
-## Local preview
-
-Serve over HTTP (modules require a server):
-
-```bash
-npx serve .
-```
-
-Open `http://localhost:3000` (or the port shown).
+- Data path: `users/{uid}/telegramBots/{botId}/groups/{chatId}`
 
 ## Deploy
 
-Static deploy to **Vercel** or Firebase Hosting.
+Production: **Vercel** (static site + `/api/telegram` proxy for Bot API / CORS).

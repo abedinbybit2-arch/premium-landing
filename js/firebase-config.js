@@ -1,6 +1,7 @@
 /**
  * AndroGRAM — Firebase Web configuration
  * Project: abedin-eb675 | App: AndroGRAM Web
+ * Uses: Authentication + Cloud Firestore (no Hosting required)
  */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 import {
@@ -8,6 +9,7 @@ import {
   setPersistence,
   browserLocalPersistence,
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAH_jy5t_7I8O7eagtTqRIDhA0m98ahjUo",
@@ -21,6 +23,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db = getFirestore(app);
 
 /** Persist session across reloads (IndexedDB / local storage). */
 const persistenceReady = setPersistence(auth, browserLocalPersistence).catch(
@@ -29,4 +32,4 @@ const persistenceReady = setPersistence(auth, browserLocalPersistence).catch(
   }
 );
 
-export { app, auth, firebaseConfig, persistenceReady };
+export { app, auth, db, firebaseConfig, persistenceReady };
