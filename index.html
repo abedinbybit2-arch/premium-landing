@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Aurelia — Premium digital services and subscription experience. Elevate your business with flagship-quality solutions." />
+  <meta name="keywords" content="premium services, subscribe, digital solutions, SaaS, consulting" />
+  <meta name="author" content="Aurelia" />
+  <meta name="theme-color" content="#0a0a0f" />
+  <meta property="og:title" content="Aurelia — Premium Digital Excellence" />
+  <meta property="og:description" content="Flagship-quality services designed for ambitious brands. Subscribe or buy services today." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <title>Aurelia — Premium Digital Excellence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop stop-color='%23a78bfa'/><stop offset='1' stop-color='%2360a5fa'/></linearGradient></defs><rect width='100' height='100' rx='22' fill='%230a0a0f'/><circle cx='50' cy='50' r='28' fill='url(%23g)' opacity='0.9'/></svg>" />
+</head>
+<body>
+  <!-- Animated background layers -->
+  <div class="bg-layer" aria-hidden="true">
+    <div class="gradient-orb orb-1"></div>
+    <div class="gradient-orb orb-2"></div>
+    <div class="gradient-orb orb-3"></div>
+    <canvas id="particles" class="particles-canvas"></canvas>
+    <div class="noise-overlay"></div>
+  </div>
+
+  <!-- Navigation -->
+  <header class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="#home" class="logo" aria-label="Aurelia Home">
+        <span class="logo-mark" aria-hidden="true"></span>
+        <span class="logo-text">Aurelia</span>
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#home" class="nav-link active">Home</a>
+      </nav>
+      <div class="nav-actions">
+        <a href="#cta" class="nav-cta">Get Started</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero" id="home">
+      <div class="hero-glow" aria-hidden="true"></div>
+      <div class="hero-content">
+        <div class="badge reveal" data-delay="0">
+          <span class="badge-dot"></span>
+          Premium Digital Studio
+        </div>
+
+        <h1 class="hero-title reveal" data-delay="100">
+          Crafted for brands that
+          <span class="title-gradient">demand excellence</span>
+        </h1>
+
+        <p class="hero-description reveal" data-delay="200">
+          Flagship-quality services and a refined subscription experience —
+          designed with precision, delivered with care, built to elevate your presence.
+        </p>
+
+        <div class="cta-area reveal" id="cta" data-delay="300">
+          <button type="button" class="btn btn-primary" id="btn-subscribe" data-ripple>
+            <span class="btn-shine" aria-hidden="true"></span>
+            <span class="btn-label">Premium Subscribe</span>
+            <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <button type="button" class="btn btn-secondary" id="btn-services" data-ripple>
+            <span class="btn-shine" aria-hidden="true"></span>
+            <span class="btn-label">Buy Services</span>
+            <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="hero-card glass reveal" data-delay="450">
+          <div class="card-row">
+            <div class="stat">
+              <span class="stat-value">99.9%</span>
+              <span class="stat-label">Uptime focus</span>
+            </div>
+            <div class="stat-divider" aria-hidden="true"></div>
+            <div class="stat">
+              <span class="stat-value">24/7</span>
+              <span class="stat-label">Priority care</span>
+            </div>
+            <div class="stat-divider" aria-hidden="true"></div>
+            <div class="stat">
+              <span class="stat-value">∞</span>
+              <span class="stat-label">Polish mindset</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Decorative floating globe -->
+      <div class="globe-wrap reveal" data-delay="350" aria-hidden="true">
+        <div class="globe">
+          <div class="globe-ring ring-1"></div>
+          <div class="globe-ring ring-2"></div>
+          <div class="globe-ring ring-3"></div>
+          <div class="globe-core"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <span class="logo-mark small" aria-hidden="true"></span>
+        <span class="footer-name">Aurelia</span>
+      </div>
+      <p class="copyright">&copy; <span id="year"></span> Aurelia. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden>
+    <span class="toast-icon" aria-hidden="true">✦</span>
+    <span class="toast-text" id="toast-text"></span>
+  </div>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
