@@ -12,5 +12,14 @@ service cloud.firestore {
         }
       }
     }
+
+    // Bot-scoped registry: any signed-in AndroGRAM user can load groups for a bot token they connect
+    match /bots/{botId} {
+      allow read, write: if request.auth != null;
+
+      match /groups/{groupId} {
+        allow read, write: if request.auth != null;
+      }
+    }
   }
 }

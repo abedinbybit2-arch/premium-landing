@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="js/protect.js" defer></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
@@ -82,7 +83,10 @@
           <div class="tg-panel-head">
             <div>
               <h2>Bot setup</h2>
-              <p class="tg-muted">Paste your Telegram bot token from @BotFather. Groups are saved per bot and per AndroGRAM account.</p>
+              <p class="tg-muted">
+                Paste your bot token from @BotFather. Groups are saved in Firebase under this
+                <strong>bot ID</strong> — any AndroGRAM account that connects the same token loads the same groups.
+              </p>
             </div>
           </div>
 
@@ -115,16 +119,31 @@
           </div>
         </section>
 
-        <!-- Groups -->
+        <!-- Groups + live track -->
         <section class="tg-panel">
           <div class="tg-panel-head">
             <div>
               <h2>Groups</h2>
-              <p class="tg-muted">Only groups for the <strong>active bot</strong> appear. Switching bots loads that bot’s saved groups from Firebase.</p>
+              <p class="tg-muted">
+                Live track polls Telegram every <strong>1 second</strong>. When the bot joins a group,
+                it is detected and <strong>auto-saved to Firebase</strong> — no manual refresh needed.
+              </p>
             </div>
             <div class="tg-head-actions">
-              <button type="button" class="tg-btn tg-btn-ghost" id="btn-refresh-groups" disabled>Refresh from Telegram</button>
+              <button type="button" class="tg-btn tg-btn-ghost" id="btn-refresh-groups" disabled>Force refresh</button>
               <button type="button" class="tg-btn tg-btn-ghost" id="btn-select-all" disabled>Select all</button>
+            </div>
+          </div>
+
+          <div class="tg-live-bar" id="live-status" data-state="off">
+            <span class="tg-live-dot" id="live-dot" data-state="off" aria-hidden="true"></span>
+            <div class="tg-live-copy">
+              <strong>Live group track</strong>
+              <span id="live-meta">Connect a bot to start live track</span>
+            </div>
+            <div class="tg-fb-count">
+              <span class="tg-fb-label">Firebase groups</span>
+              <strong id="firebase-count">0</strong>
             </div>
           </div>
 
@@ -134,7 +153,7 @@
               <input type="text" id="manual-chat-id" class="tg-input" placeholder="-100xxxxxxxxxx" disabled />
             </div>
             <div class="tg-actions">
-              <button type="button" class="tg-btn tg-btn-secondary" id="btn-add-chat" disabled>Add</button>
+              <button type="button" class="tg-btn tg-btn-secondary" id="btn-add-chat" disabled>Save to Firebase</button>
             </div>
           </div>
 

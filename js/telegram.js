@@ -1,10 +1,11 @@
 /**
  * AndroGRAM — Telegram Automation page controller
+ * Live group track (1s) + Firebase bot-scoped group registry
  */
 import { initProtectedPage } from "./app-shell.js";
 import {
   getMe,
-  discoverGroups,
+  pollUpdates,
   getChat,
   sendMessage,
   sendPhoto,
@@ -16,15 +17,27 @@ import {
   listBots,
   listGroups,
   saveGroups,
+  saveGroupsFast,
   getActiveBotId,
   setActiveBot,
+  countGroups,
+  migrateUserGroupsToGlobal,
 } from "./telegram-store.js";
 
+const LIVE_INTERVAL_MS = 1000;
+
 let currentUser = null;
-let activeBot = null; // { id, token, username, firstName, ... }
-let groups = []; // current bot groups
+let activeBot = null;
+let groups = [];
+let groupMap = new Map(); // chatId -> group
 let photoDataUrl = null;
 let photoName = null;
+
+let liveTimer = null;
+let liveBusy = false;
+let updatesOffset = 0;
+let livePulse = 0;
+let lastLiveOkAt = 0;
 
 const els = {};
 
@@ -61,6 +74,10 @@ function cacheEls() {
     "send-progress",
     "send-progress-bar",
     "send-progress-label",
+    "firebase-count",
+    "live-status",
+    "live-dot",
+    "live-meta",
   ].forEach((id) => {
     els[id] = $(id);
   });
@@ -93,7 +110,7 @@ function setBusy(btn, busy, label) {
 }
 
 function setComposerEnabled(on) {
-  const ids = [
+  [
     "msg-text",
     "msg-photo",
     "btn-send-selected",
@@ -102,30 +119,93 @@ function setComposerEnabled(on) {
     "btn-select-all",
     "manual-chat-id",
     "btn-add-chat",
-  ];
-  ids.forEach((id) => {
+  ].forEach((id) => {
     if (els[id]) els[id].disabled = !on;
   });
 }
 
 function updateBotCard(bot) {
   if (!bot) {
-    els["bot-info-card"].hidden = true;
-    els["bot-status-pill"].textContent = "No bot connected";
+    if (els["bot-info-card"]) els["bot-info-card"].hidden = true;
+    if (els["bot-status-pill"]) els["bot-status-pill"].textContent = "No bot connected";
     return;
   }
-  els["bot-info-card"].hidden = false;
-  els["bot-display-name"].textContent = bot.firstName || bot.first_name || "Bot";
-  els["bot-display-user"].textContent = bot.username ? `@${bot.username}` : "—";
-  els["bot-display-id"].textContent = bot.id || bot.botId || "—";
-  els["bot-status-pill"].textContent = bot.username
-    ? `@${bot.username} connected`
-    : "Bot connected";
+  if (els["bot-info-card"]) els["bot-info-card"].hidden = false;
+  if (els["bot-display-name"]) {
+    els["bot-display-name"].textContent = bot.firstName || bot.first_name || "Bot";
+  }
+  if (els["bot-display-user"]) {
+    els["bot-display-user"].textContent = bot.username ? `@${bot.username}` : "—";
+  }
+  if (els["bot-display-id"]) {
+    els["bot-display-id"].textContent = bot.id || bot.botId || "—";
+  }
+  if (els["bot-status-pill"]) {
+    els["bot-status-pill"].textContent = bot.username
+      ? `@${bot.username} connected`
+      : "Bot connected";
+  }
+}
+
+function updateFirebaseCount(n) {
+  if (els["firebase-count"]) {
+    els["firebase-count"].textContent = String(n);
+  }
+}
+
+function updateLiveUi(state, detail) {
+  if (els["live-status"]) {
+    els["live-status"].dataset.state = state || "off";
+  }
+  if (els["live-dot"]) {
+    els["live-dot"].dataset.state = state || "off";
+  }
+  if (els["live-meta"]) {
+    els["live-meta"].textContent = detail || "Live track off";
+  }
+}
+
+function syncGroupMap(list) {
+  groupMap = new Map();
+  for (const g of list || []) {
+    const id = String(g.chatId || g.id);
+    groupMap.set(id, {
+      id,
+      chatId: id,
+      title: g.title || `Chat ${id}`,
+      type: g.type || "group",
+      username: g.username || null,
+    });
+  }
+  groups = Array.from(groupMap.values()).sort((a, b) =>
+    String(a.title).localeCompare(String(b.title))
+  );
+}
+
+function mergeGroupsLocal(incoming) {
+  let added = 0;
+  for (const g of incoming || []) {
+    const id = String(g.chatId || g.id);
+    if (!id) continue;
+    if (!groupMap.has(id)) added += 1;
+    groupMap.set(id, {
+      id,
+      chatId: id,
+      title: g.title || groupMap.get(id)?.title || `Chat ${id}`,
+      type: g.type || groupMap.get(id)?.type || "group",
+      username: g.username ?? groupMap.get(id)?.username ?? null,
+    });
+  }
+  groups = Array.from(groupMap.values()).sort((a, b) =>
+    String(a.title).localeCompare(String(b.title))
+  );
+  return added;
 }
 
 function renderSavedBots(bots, activeId) {
   const wrap = els["saved-bots-wrap"];
   const box = els["saved-bots"];
+  if (!wrap || !box) return;
   if (!bots.length) {
     wrap.hidden = true;
     box.innerHTML = "";
@@ -146,6 +226,12 @@ function renderSavedBots(bots, activeId) {
 
 function renderGroups() {
   const list = els["groups-list"];
+  if (!list) return;
+
+  const selected = new Set(
+    Array.from(document.querySelectorAll(".group-check:checked")).map((el) => el.value)
+  );
+
   list.innerHTML = "";
 
   if (!groups.length) {
@@ -153,21 +239,29 @@ function renderGroups() {
     empty.className = "tg-empty";
     empty.id = "groups-empty";
     empty.textContent = activeBot
-      ? "No groups found for this bot yet. Add the bot to groups, send a message there, then refresh — or add a chat ID manually."
+      ? "No groups in Firebase yet. Add the bot to groups — live track will auto-save every 1s."
       : "Connect a bot to load groups.";
     list.appendChild(empty);
+    updateFirebaseCount(0);
     return;
   }
 
+  updateFirebaseCount(groups.length);
+
   groups.forEach((g) => {
+    const id = String(g.chatId || g.id);
     const row = document.createElement("label");
     row.className = "tg-group";
-    row.dataset.chatId = String(g.chatId || g.id);
+    row.dataset.chatId = id;
 
     const cb = document.createElement("input");
     cb.type = "checkbox";
-    cb.value = String(g.chatId || g.id);
+    cb.value = id;
     cb.className = "group-check";
+    if (selected.has(id)) {
+      cb.checked = true;
+      row.classList.add("selected");
+    }
     cb.addEventListener("change", () => {
       row.classList.toggle("selected", cb.checked);
     });
@@ -184,7 +278,7 @@ function renderGroups() {
     `;
     body.querySelector(".tg-group-title").textContent = g.title || "Untitled";
     body.querySelector(".tg-badge").textContent = g.type || "group";
-    body.querySelector(".chat-id").textContent = `ID ${g.chatId || g.id}`;
+    body.querySelector(".chat-id").textContent = `ID ${id}`;
     body.querySelector(".chat-user").textContent = g.username ? `@${g.username}` : "";
 
     row.appendChild(cb);
@@ -195,6 +289,73 @@ function renderGroups() {
 
 function selectedChatIds() {
   return Array.from(document.querySelectorAll(".group-check:checked")).map((el) => el.value);
+}
+
+/* ── Live track (1 second) ───────────────────────────────── */
+
+function stopLiveTrack() {
+  if (liveTimer) {
+    clearInterval(liveTimer);
+    liveTimer = null;
+  }
+  liveBusy = false;
+  updatesOffset = 0;
+  updateLiveUi("off", "Live track off");
+}
+
+function startLiveTrack() {
+  stopLiveTrack();
+  if (!activeBot?.token) return;
+  updateLiveUi("on", "Live track · every 1s · waiting…");
+  liveTimer = setInterval(() => {
+    liveTick().catch(() => {});
+  }, LIVE_INTERVAL_MS);
+  // immediate first tick
+  liveTick().catch(() => {});
+}
+
+async function liveTick() {
+  if (!activeBot?.token || liveBusy) return;
+  liveBusy = true;
+  livePulse += 1;
+  try {
+    const { groups: found, nextOffset } = await pollUpdates(activeBot.token, {
+      offset: updatesOffset || undefined,
+    });
+
+    if (nextOffset) updatesOffset = nextOffset;
+
+    let newCount = 0;
+    if (found.length) {
+      // Only persist groups we didn't already know (still merge titles for known)
+      const fresh = found.filter((g) => !groupMap.has(String(g.id || g.chatId)));
+      await saveGroupsFast(activeBot.id, found);
+      newCount = mergeGroupsLocal(found);
+      if (newCount > 0) {
+        renderGroups();
+      } else {
+        updateFirebaseCount(groups.length);
+      }
+    }
+
+    lastLiveOkAt = Date.now();
+    const detail =
+      newCount > 0
+        ? `Live · +${newCount} new group(s) auto-saved · Firebase ${groups.length}`
+        : `Live · 1s refresh · Firebase ${groups.length} group(s) · #${livePulse}`;
+    updateLiveUi("on", detail);
+  } catch (err) {
+    updateLiveUi("warn", `Live track: ${err.message || "error"} — retrying…`);
+  } finally {
+    liveBusy = false;
+  }
+}
+
+async function loadGroupsFromFirebase(botId) {
+  const list = await listGroups(botId);
+  syncGroupMap(list);
+  renderGroups();
+  return list.length;
 }
 
 async function loadAccountState() {
@@ -217,20 +378,24 @@ async function loadAccountState() {
         username: bot.username,
         firstName: bot.firstName || bot.first_name,
       };
-      els["bot-token"].value = bot.token;
+      if (els["bot-token"]) els["bot-token"].value = bot.token;
       updateBotCard(activeBot);
       setComposerEnabled(true);
-      groups = await listGroups(currentUser.uid, activeBot.id);
-      renderGroups();
+
+      // Migrate legacy per-user groups → global bot registry
+      await migrateUserGroupsToGlobal(currentUser.uid, activeBot.id);
+      await loadGroupsFromFirebase(activeBot.id);
+      startLiveTrack();
       return;
     }
   }
 
   activeBot = null;
-  groups = [];
+  syncGroupMap([]);
   updateBotCard(null);
   setComposerEnabled(false);
   renderGroups();
+  stopLiveTrack();
 }
 
 async function switchBot(botId) {
@@ -243,24 +408,25 @@ async function switchBot(botId) {
     username: bot.username,
     firstName: bot.firstName,
   };
-  els["bot-token"].value = bot.token;
+  if (els["bot-token"]) els["bot-token"].value = bot.token;
   updateBotCard(activeBot);
   setComposerEnabled(true);
-  groups = await listGroups(currentUser.uid, activeBot.id);
-  renderGroups();
+  await migrateUserGroupsToGlobal(currentUser.uid, activeBot.id);
+  const n = await loadGroupsFromFirebase(activeBot.id);
+  startLiveTrack();
   const bots = await listBots(currentUser.uid);
   renderSavedBots(bots, activeBot.id);
   hideAlert(els["setup-alert"]);
   showAlert(
     els["setup-alert"],
     "info",
-    `Switched to @${bot.username || bot.id}. Showing only this bot’s groups.`
+    `Switched to @${bot.username || bot.id}. Loaded ${n} group(s) from Firebase for this bot.`
   );
 }
 
 async function connectBot() {
   hideAlert(els["setup-alert"]);
-  const token = els["bot-token"].value.trim();
+  const token = (els["bot-token"]?.value || "").trim();
   if (!token) {
     showAlert(els["setup-alert"], "error", "Enter a bot token first.");
     return;
@@ -289,45 +455,34 @@ async function connectBot() {
     updateBotCard(activeBot);
     setComposerEnabled(true);
 
-    // Discover groups from Telegram updates + merge with saved
-    let discovered = [];
+    // Load ALL groups already saved in Firebase for this bot (any previous account)
+    await migrateUserGroupsToGlobal(currentUser.uid, botId);
+    let n = await loadGroupsFromFirebase(botId);
+
+    // One-shot discover + save, then start live track
     try {
-      discovered = await discoverGroups(token);
+      const { groups: found, nextOffset } = await pollUpdates(token, {});
+      if (nextOffset) updatesOffset = nextOffset;
+      if (found.length) {
+        await saveGroupsFast(botId, found);
+        mergeGroupsLocal(found);
+        renderGroups();
+        n = groups.length;
+      }
     } catch (e) {
-      console.warn("discoverGroups", e);
+      console.warn("discover", e);
     }
 
-    const existing = await listGroups(currentUser.uid, botId);
-    const mergedMap = new Map();
-    existing.forEach((g) => mergedMap.set(String(g.chatId || g.id), g));
-    discovered.forEach((g) => {
-      mergedMap.set(String(g.id), {
-        id: String(g.id),
-        chatId: String(g.id),
-        title: g.title,
-        type: g.type,
-        username: g.username,
-      });
-    });
-
-    const merged = Array.from(mergedMap.values());
-    if (discovered.length) {
-      await saveGroups(currentUser.uid, botId, discovered);
-    }
-
-    groups = await listGroups(currentUser.uid, botId);
-    if (!groups.length && merged.length) {
-      groups = merged;
-    }
-    renderGroups();
+    startLiveTrack();
 
     const bots = await listBots(currentUser.uid);
     renderSavedBots(bots, botId);
 
+    const totalFb = await countGroups(botId);
     showAlert(
       els["setup-alert"],
       "success",
-      `Connected @${me.username || me.id}. ${groups.length} group(s) loaded for this bot and saved to your account.`
+      `Connected @${me.username || me.id}. Firebase has ${totalFb} group(s) for this bot. Live track ON (every 1s) — new groups auto-save.`
     );
   } catch (err) {
     console.error(err);
@@ -346,18 +501,22 @@ async function refreshGroups() {
   hideAlert(els["setup-alert"]);
   setBusy(els["btn-refresh-groups"], true, "Refreshing…");
   try {
-    const discovered = await discoverGroups(activeBot.token);
-    if (discovered.length) {
-      await saveGroups(currentUser.uid, activeBot.id, discovered);
+    const { groups: found, nextOffset } = await pollUpdates(activeBot.token, {
+      offset: updatesOffset || undefined,
+    });
+    if (nextOffset) updatesOffset = nextOffset;
+    if (found.length) {
+      await saveGroupsFast(activeBot.id, found);
+      mergeGroupsLocal(found);
     }
-    groups = await listGroups(currentUser.uid, activeBot.id);
-    renderGroups();
+    // Always re-sync list from Firebase
+    await loadGroupsFromFirebase(activeBot.id);
     showAlert(
       els["setup-alert"],
-      discovered.length ? "success" : "info",
-      discovered.length
-        ? `Found ${discovered.length} chat(s) from Telegram updates and saved them.`
-        : "No new groups in recent updates. Add the bot to a group and send a message, or add chat ID manually."
+      found.length ? "success" : "info",
+      found.length
+        ? `Found ${found.length} chat(s) from Telegram — saved to Firebase. Total: ${groups.length}.`
+        : `Firebase still has ${groups.length} group(s). Live track keeps watching every 1s.`
     );
   } catch (err) {
     showAlert(els["setup-alert"], "error", err.message || "Refresh failed");
@@ -368,7 +527,7 @@ async function refreshGroups() {
 
 async function addManualChat() {
   if (!activeBot?.token) return;
-  const chatId = els["manual-chat-id"].value.trim();
+  const chatId = (els["manual-chat-id"]?.value || "").trim();
   if (!chatId) {
     showAlert(els["setup-alert"], "error", "Enter a chat ID.");
     return;
@@ -384,11 +543,11 @@ async function addManualChat() {
       type: chat.type || "group",
       username: chat.username || null,
     };
-    await saveGroups(currentUser.uid, activeBot.id, [g]);
-    groups = await listGroups(currentUser.uid, activeBot.id);
+    await saveGroups(activeBot.id, [g]);
+    mergeGroupsLocal([g]);
     renderGroups();
-    els["manual-chat-id"].value = "";
-    showAlert(els["setup-alert"], "success", `Added “${g.title}” for this bot.`);
+    if (els["manual-chat-id"]) els["manual-chat-id"].value = "";
+    showAlert(els["setup-alert"], "success", `Saved “${g.title}” to Firebase for this bot.`);
   } catch (err) {
     showAlert(
       els["setup-alert"],
@@ -421,15 +580,15 @@ async function sendToChats(chatIds) {
     return;
   }
 
-  const text = els["msg-text"].value.trim();
+  const text = (els["msg-text"]?.value || "").trim();
   if (!text && !photoDataUrl) {
     showAlert(els["send-alert"], "error", "Write a message or attach a photo.");
     return;
   }
 
-  els["btn-send-selected"].disabled = true;
-  els["btn-send-all"].disabled = true;
-  els["send-progress"].hidden = false;
+  if (els["btn-send-selected"]) els["btn-send-selected"].disabled = true;
+  if (els["btn-send-all"]) els["btn-send-all"].disabled = true;
+  if (els["send-progress"]) els["send-progress"].hidden = false;
 
   let ok = 0;
   let fail = 0;
@@ -439,7 +598,9 @@ async function sendToChats(chatIds) {
     const chatId = chatIds[i];
     const pct = Math.round(((i + 1) / chatIds.length) * 100);
     if (els["send-progress-bar"]) els["send-progress-bar"].style.width = pct + "%";
-    els["send-progress-label"].textContent = `Sending ${i + 1} / ${chatIds.length}…`;
+    if (els["send-progress-label"]) {
+      els["send-progress-label"].textContent = `Sending ${i + 1} / ${chatIds.length}…`;
+    }
 
     try {
       if (photoDataUrl) {
@@ -457,20 +618,15 @@ async function sendToChats(chatIds) {
       errors.push(`${chatId}: ${err.message}`);
     }
 
-    // mild rate-limit cushion
     await new Promise((r) => setTimeout(r, 350));
   }
 
-  els["send-progress"].hidden = true;
-  els["btn-send-selected"].disabled = false;
-  els["btn-send-all"].disabled = false;
+  if (els["send-progress"]) els["send-progress"].hidden = true;
+  if (els["btn-send-selected"]) els["btn-send-selected"].disabled = false;
+  if (els["btn-send-all"]) els["btn-send-all"].disabled = false;
 
   if (fail === 0) {
-    showAlert(
-      els["send-alert"],
-      "success",
-      `Sent successfully to ${ok} group(s).`
-    );
+    showAlert(els["send-alert"], "success", `Sent successfully to ${ok} group(s).`);
   } else {
     showAlert(
       els["send-alert"],
@@ -491,16 +647,16 @@ function wirePhoto() {
     }
     photoDataUrl = await fileToDataUrl(file);
     photoName = file.name || "photo.jpg";
-    els["photo-preview"].hidden = false;
-    els["photo-preview-img"].src = photoDataUrl;
+    if (els["photo-preview"]) els["photo-preview"].hidden = false;
+    if (els["photo-preview-img"]) els["photo-preview-img"].src = photoDataUrl;
   });
 
   els["btn-clear-photo"]?.addEventListener("click", () => {
     photoDataUrl = null;
     photoName = null;
-    els["msg-photo"].value = "";
-    els["photo-preview"].hidden = true;
-    els["photo-preview-img"].src = "";
+    if (els["msg-photo"]) els["msg-photo"].value = "";
+    if (els["photo-preview"]) els["photo-preview"].hidden = true;
+    if (els["photo-preview-img"]) els["photo-preview-img"].src = "";
   });
 }
 
@@ -509,9 +665,7 @@ function wireEvents() {
   els["btn-refresh-groups"]?.addEventListener("click", refreshGroups);
   els["btn-add-chat"]?.addEventListener("click", addManualChat);
   els["btn-select-all"]?.addEventListener("click", toggleSelectAll);
-  els["btn-send-selected"]?.addEventListener("click", () =>
-    sendToChats(selectedChatIds())
-  );
+  els["btn-send-selected"]?.addEventListener("click", () => sendToChats(selectedChatIds()));
   els["btn-send-all"]?.addEventListener("click", () =>
     sendToChats(groups.map((g) => String(g.chatId || g.id)))
   );
@@ -520,6 +674,12 @@ function wireEvents() {
   els["bot-token"]?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") connectBot();
   });
+
+  window.addEventListener("beforeunload", () => stopLiveTrack());
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) return;
+    if (activeBot?.token && !liveTimer) startLiveTrack();
+  });
 }
 
 initProtectedPage(async (user) => {
@@ -527,6 +687,7 @@ initProtectedPage(async (user) => {
   cacheEls();
   wireEvents();
   setComposerEnabled(false);
+  updateLiveUi("off", "Connect a bot to start live track");
   try {
     await loadAccountState();
   } catch (err) {

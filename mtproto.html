@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="js/protect.js" defer></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
@@ -202,8 +203,9 @@
               <div>
                 <h2>Add bot to groups</h2>
                 <p class="tg-muted">
-                  Enter a bot username. One click adds it to up to <strong>100</strong> selected owned groups,
-                  promotes it to <strong>admin</strong>, and <strong>skips</strong> groups where it is already admin.
+                  Enter a bot username. Adds the bot as a <strong>member only</strong> (no admin promote)
+                  to up to <strong>100</strong> selected owned groups.
+                  Groups where the bot is <strong>already joined are skipped</strong>.
                 </p>
               </div>
             </div>
@@ -215,7 +217,7 @@
               </div>
               <div class="tg-actions">
                 <button type="button" class="tg-btn tg-btn-primary" id="btn-add-bot">
-                  <span class="btn-text">Add bot to 100 groups (1 click)</span>
+                  <span class="btn-text">Add bot to groups (no admin)</span>
                 </button>
               </div>
             </div>

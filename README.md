@@ -7,8 +7,8 @@ Premium landing + Firebase Auth + Telegram Automation + MTProto Automation.
 - **AndroGRAM brand** — dark, modern flagship landing
 - **Firebase Authentication** — email/password, session persistence
 - **Protected app** — Dashboard, Profile, Telegram Automation, MTProto Automation
-- **Telegram Automation** — bot token, groups in Firestore, broadcast text/photo
-- **MTProto Automation** — user phone login (api_id/hash server-only), load owned groups, bulk-add bot as admin to up to 100 groups
+- **Telegram Automation** — bot token, live group track (1s), Firebase bot-scoped group registry, broadcast text/photo
+- **MTProto Automation** — user phone login (api_id/hash server-only), load owned groups, bulk-add bot as member only (no admin; skip already joined)
 
 ## Pages
 
@@ -34,7 +34,9 @@ Premium landing + Firebase Auth + Telegram Automation + MTProto Automation.
 
 - **Auth** + **Firestore** (bot automation data)
 - Project: `abedin-eb675`
-- Data path: `users/{uid}/telegramBots/{botId}/groups/{chatId}`
+- Bot groups (shared by bot token / any AndroGRAM account): `bots/{botId}/groups/{chatId}`
+- User connection: `users/{uid}/telegramBots/{botId}`
+- Live track: client polls Telegram `getUpdates` every 1s and auto-saves new groups to Firebase
 
 ## Deploy
 

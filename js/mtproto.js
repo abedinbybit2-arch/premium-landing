@@ -418,7 +418,7 @@ function renderResults(allResults, summary) {
   box.hidden = false;
 
   const lines = [
-    `<div class="mtp-summary">Done — added/admin: <strong>${summary.added_admin || 0}</strong>, promoted: <strong>${summary.promoted || 0}</strong>, skipped: <strong>${summary.skipped || 0}</strong>, errors: <strong>${summary.error || 0}</strong></div>`,
+    `<div class="mtp-summary">Done — added: <strong>${summary.added || 0}</strong>, already in group (skipped): <strong>${summary.skipped || 0}</strong>, errors: <strong>${summary.error || 0}</strong></div>`,
   ];
 
   for (const r of allResults) {
@@ -461,7 +461,7 @@ async function onAddBot() {
 
   const chunks = chunkArray(selected, BATCH_SIZE);
   const allResults = [];
-  const summary = { added_admin: 0, promoted: 0, skipped: 0, error: 0, total: 0 };
+  const summary = { added: 0, skipped: 0, error: 0, total: 0 };
 
   if (els["bot-progress"]) els["bot-progress"].hidden = false;
   if (els["bot-results"]) {
@@ -497,8 +497,7 @@ async function onAddBot() {
       allResults.push(...results);
       for (const r of results) {
         summary.total++;
-        if (r.status === "added_admin") summary.added_admin++;
-        else if (r.status === "promoted") summary.promoted++;
+        if (r.status === "added") summary.added++;
         else if (r.status === "skipped") summary.skipped++;
         else if (r.status === "error") summary.error++;
       }
@@ -515,10 +514,8 @@ async function onAddBot() {
     renderResults(allResults, summary);
     showAlert(
       els["bot-alert"],
-      summary.error && !summary.added_admin && !summary.promoted && !summary.skipped
-        ? "error"
-        : "success",
-      `Finished for @${botUsername}: ${summary.added_admin} added+admin, ${summary.promoted} promoted, ${summary.skipped} skipped, ${summary.error} errors.`
+      summary.error && !summary.added && !summary.skipped ? "error" : "success",
+      `Finished for @${botUsername}: ${summary.added} added (member only), ${summary.skipped} already joined (skipped), ${summary.error} errors.`
     );
   } catch (err) {
     if (err.status === 401) {
@@ -528,7 +525,7 @@ async function onAddBot() {
     showAlert(els["bot-alert"], "error", err.message || "Bot add failed");
     if (allResults.length) renderResults(allResults, summary);
   } finally {
-    setBusy(els["btn-add-bot"], false, "Add bot to 100 groups (1 click)");
+    setBusy(els["btn-add-bot"], false, "Add bot to groups (no admin)");
     if (els["btn-load-groups"]) els["btn-load-groups"].disabled = false;
     if (els["bot-progress-label"]) {
       els["bot-progress-label"].textContent = `Done ${done}/${total}`;

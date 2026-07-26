@@ -392,70 +392,6 @@ async function actionGetOwnedGroups(body) {
   }
 }
 
-function adminRights() {
-  return new Api.ChatAdminRights({
-    changeInfo: false,
-    postMessages: true,
-    editMessages: true,
-    deleteMessages: true,
-    banUsers: false,
-    inviteUsers: true,
-    pinMessages: true,
-    addAdmins: false,
-    anonymous: false,
-    manageCall: false,
-    other: true,
-    manageTopics: false,
-    postStories: false,
-    editStories: false,
-    deleteStories: false,
-  });
-}
-
-async function isAlreadyAdmin(client, entity, bot) {
-  const cn = entity.className || entity.constructor?.name || "";
-  try {
-    if (cn === "Channel") {
-      const res = await client.invoke(
-        new Api.channels.GetParticipant({
-          channel: entity,
-          participant: bot,
-        })
-      );
-      const p = res.participant;
-      const pcn = p.className || p.constructor?.name || "";
-      if (pcn === "ChannelParticipantAdmin" || pcn === "ChannelParticipantCreator") {
-        return true;
-      }
-      return false;
-    }
-
-    // Basic group — inspect full chat participants
-    const full = await client.invoke(
-      new Api.messages.GetFullChat({
-        chatId: entity.id,
-      })
-    );
-    const participants = full.fullChat?.participants?.participants || [];
-    const botId = String(bot.id);
-    for (const p of participants) {
-      const pcn = p.className || p.constructor?.name || "";
-      const uid = p.userId != null ? String(p.userId) : "";
-      if (uid === botId && (pcn === "ChatParticipantAdmin" || pcn === "ChatParticipantCreator")) {
-        return true;
-      }
-    }
-    return false;
-  } catch (err) {
-    const msg = errMsg(err);
-    if (/USER_NOT_PARTICIPANT|PARTICIPANT_ID_INVALID|CHAT_ADMIN_REQUIRED/i.test(msg)) {
-      return false;
-    }
-    // If we cannot check, try invite/promote path
-    return false;
-  }
-}
-
 async function isMember(client, entity, bot) {
   const cn = entity.className || entity.constructor?.name || "";
   try {
@@ -479,6 +415,7 @@ async function isMember(client, entity, bot) {
   }
 }
 
+/** Invite bot as member only — never promote to admin. */
 async function inviteBot(client, entity, bot) {
   const cn = entity.className || entity.constructor?.name || "";
   if (cn === "Channel") {
@@ -498,32 +435,6 @@ async function inviteBot(client, entity, bot) {
         chatId: entity.id,
         userId: bot,
         fwdLimit: 0,
-      })
-    )
-  );
-}
-
-async function promoteBot(client, entity, bot) {
-  const cn = entity.className || entity.constructor?.name || "";
-  if (cn === "Channel") {
-    await withFloodRetry(() =>
-      client.invoke(
-        new Api.channels.EditAdmin({
-          channel: entity,
-          userId: bot,
-          adminRights: adminRights(),
-          rank: "bot",
-        })
-      )
-    );
-    return;
-  }
-  await withFloodRetry(() =>
-    client.invoke(
-      new Api.messages.EditChatAdmin({
-        chatId: entity.id,
-        userId: bot,
-        isAdmin: true,
       })
     )
   );
@@ -566,6 +477,11 @@ async function resolveGroupEntity(client, group) {
   throw lastErr || new Error("Could not resolve group");
 }
 
+/**
+ * Add bot as member only.
+ * - Already joined → skip
+ * - Not joined → invite (no admin promote)
+ */
 async function processOneGroup(client, bot, group) {
   const title = group.title || group.peerId || "group";
   try {
@@ -581,73 +497,35 @@ async function processOneGroup(client, bot, group) {
       };
     }
 
-    // Already admin → skip
-    if (await isAlreadyAdmin(client, entity, bot)) {
-      return { peerId: group.peerId, title, status: "skipped", detail: "Bot already admin" };
-    }
-
-    const member = await isMember(client, entity, bot);
-    if (!member) {
-      try {
-        await inviteBot(client, entity, bot);
-      } catch (err) {
-        const msg = errMsg(err);
-        if (/USER_ALREADY_PARTICIPANT/i.test(msg)) {
-          // continue to promote
-        } else if (/USER_PRIVACY_RESTRICTED|BOTS_TOO_MUCH|USERS_TOO_MUCH|CHAT_MEMBER_ADD_FAILED/i.test(msg)) {
-          return { peerId: group.peerId, title, status: "error", detail: msg };
-        } else {
-          return { peerId: group.peerId, title, status: "error", detail: msg };
-        }
-      }
-      // small gap so Telegram indexes membership
-      await sleep(250);
-    }
-
-    // Re-check admin after invite
-    if (await isAlreadyAdmin(client, entity, bot)) {
+    if (await isMember(client, entity, bot)) {
       return {
         peerId: group.peerId,
         title,
-        status: member ? "skipped" : "added_admin",
-        detail: member ? "Bot already admin" : "Added & admin",
+        status: "skipped",
+        detail: "Bot already in group — skipped",
       };
     }
 
     try {
-      await promoteBot(client, entity, bot);
+      await inviteBot(client, entity, bot);
+      return {
+        peerId: group.peerId,
+        title,
+        status: "added",
+        detail: "Bot added (member only, not admin)",
+      };
     } catch (err) {
       const msg = errMsg(err);
-      if (/ADMIN_RANK_EMOJI_NOT_ALLOWED/i.test(msg)) {
-        // retry with empty rank for channels
-        const cn = entity.className || entity.constructor?.name || "";
-        if (cn === "Channel") {
-          await withFloodRetry(() =>
-            client.invoke(
-              new Api.channels.EditAdmin({
-                channel: entity,
-                userId: bot,
-                adminRights: adminRights(),
-                rank: "",
-              })
-            )
-          );
-        } else {
-          return { peerId: group.peerId, title, status: "error", detail: msg };
-        }
-      } else if (/USER_NOT_PARTICIPANT/i.test(msg)) {
-        return { peerId: group.peerId, title, status: "error", detail: "Bot not in group after invite" };
-      } else {
-        return { peerId: group.peerId, title, status: "error", detail: msg };
+      if (/USER_ALREADY_PARTICIPANT/i.test(msg)) {
+        return {
+          peerId: group.peerId,
+          title,
+          status: "skipped",
+          detail: "Bot already in group — skipped",
+        };
       }
+      return { peerId: group.peerId, title, status: "error", detail: msg };
     }
-
-    return {
-      peerId: group.peerId,
-      title,
-      status: member ? "promoted" : "added_admin",
-      detail: member ? "Promoted to admin" : "Added & made admin",
-    };
   } catch (err) {
     return { peerId: group.peerId, title, status: "error", detail: errMsg(err) };
   }
@@ -705,8 +583,7 @@ async function actionAddBotToGroups(body) {
 
     const summary = {
       total: results.length,
-      added_admin: results.filter((r) => r.status === "added_admin").length,
-      promoted: results.filter((r) => r.status === "promoted").length,
+      added: results.filter((r) => r.status === "added").length,
       skipped: results.filter((r) => r.status === "skipped").length,
       error: results.filter((r) => r.status === "error").length,
     };

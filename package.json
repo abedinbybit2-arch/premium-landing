@@ -1,12 +1,16 @@
 {
   "name": "androgram",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "private": true,
   "description": "AndroGRAM — premium landing + Firebase auth + Telegram + MTProto automation",
   "scripts": {
-    "start": "npx serve ."
+    "start": "npx serve .",
+    "minify": "node scripts/minify-js.mjs"
   },
   "dependencies": {
     "telegram": "^2.26.22"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.12"
   }
 }
