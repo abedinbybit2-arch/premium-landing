@@ -1,5 +1,14 @@
 {
   "cleanUrls": false,
+  "functions": {
+    "api/mtproto.js": {
+      "maxDuration": 60,
+      "memory": 1024
+    },
+    "api/telegram.js": {
+      "maxDuration": 30
+    }
+  },
   "headers": [
     {
       "source": "/(.*)",

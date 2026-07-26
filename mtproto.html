@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#070b10" />
+  <title>MTProto Automation — AndroGRAM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/telegram.css" />
+  <link rel="stylesheet" href="css/mtproto.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop stop-color='%233ddc84'/><stop offset='1' stop-color='%2322d3ee'/></linearGradient></defs><rect width='100' height='100' rx='22' fill='%070b10'/><circle cx='50' cy='50' r='28' fill='url(%23g)'/></svg>" />
+</head>
+<body class="app-body">
+  <div class="app-gate" id="app-gate">
+    <div class="spinner" aria-hidden="true"></div>
+  </div>
+
+  <div class="sidebar-overlay" id="sidebar-overlay" hidden></div>
+
+  <div class="app-shell" id="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+      <a href="dashboard.html" class="sidebar-brand">
+        <span class="logo-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M7 9a5 5 0 0 1 10 0v7a3 3 0 0 1-3 3h-4a3 3 0 0 1-3-3V9z" fill="currentColor"/><circle cx="9.5" cy="11" r="1" fill="#04120a"/><circle cx="14.5" cy="11" r="1" fill="#04120a"/></svg>
+        </span>
+        <span class="logo-text">Andro<span>GRAM</span></span>
+      </a>
+
+      <nav class="sidebar-nav">
+        <a href="dashboard.html" class="nav-item" data-nav="dashboard">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+          Dashboard
+        </a>
+        <a href="profile.html" class="nav-item" data-nav="profile">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-4 0-7 2-7 4.5V20h14v-1.5C19 16 16 14 12 14z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+          Profile
+        </a>
+        <a href="telegram.html" class="nav-item" data-nav="telegram">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 5 2 12.5l6.5 2L17 8l-6 7.5 6.5 2L21 5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+          Telegram Automation
+        </a>
+        <a href="mtproto.html" class="nav-item active" data-nav="mtproto">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 12v9M12 12 4 7.5M12 12l8-4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          MTProto Automation
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-chip">
+          <div class="user-avatar" id="user-avatar">AG</div>
+          <div class="user-meta">
+            <div class="user-name" id="user-name">User</div>
+            <div class="user-email" id="user-email">—</div>
+          </div>
+        </div>
+        <button type="button" class="btn-logout" id="logout-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Log out
+        </button>
+      </div>
+    </aside>
+
+    <div class="main-wrap">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button type="button" class="menu-toggle" id="menu-toggle" aria-label="Open menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+          <h1 class="page-title">MTProto Automation</h1>
+        </div>
+        <div class="topbar-right">
+          <span class="status-pill" id="status-pill">Not connected</span>
+        </div>
+      </header>
+
+      <main class="content tg-content">
+        <!-- Login (phone only — api_id/hash on server) -->
+        <section class="tg-panel" id="login-panel">
+          <div class="tg-panel-head">
+            <div>
+              <h2>Telegram account login</h2>
+              <p class="tg-muted">
+                Sign in with your phone number. App <strong>api_id</strong> / <strong>api_hash</strong>
+                are configured securely on the server — you only enter number + code.
+              </p>
+            </div>
+          </div>
+
+          <div class="mtp-secure-note">
+            <span class="mtp-lock" aria-hidden="true">🔒</span>
+            <span>Credentials stay on the website backend. Never shared with the browser UI.</span>
+          </div>
+
+          <div id="phone-step">
+            <div class="tg-row">
+              <div class="tg-field grow">
+                <label for="phone-input">Phone number</label>
+                <input type="tel" id="phone-input" class="tg-input" placeholder="+8801XXXXXXXXX" autocomplete="tel" />
+              </div>
+              <div class="tg-actions">
+                <button type="button" class="tg-btn tg-btn-primary" id="btn-send-code">
+                  <span class="btn-text">Send code</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div id="code-step" hidden>
+            <div class="tg-row">
+              <div class="tg-field grow">
+                <label for="code-input">Login code</label>
+                <input type="text" id="code-input" class="tg-input" placeholder="12345" inputmode="numeric" autocomplete="one-time-code" />
+              </div>
+              <div class="tg-actions">
+                <button type="button" class="tg-btn tg-btn-primary" id="btn-verify-code">
+                  <span class="btn-text">Verify code</span>
+                </button>
+              </div>
+            </div>
+            <div class="tg-send-row" style="margin-top:0.75rem;">
+              <button type="button" class="tg-btn tg-btn-ghost" id="btn-resend-code">
+                <span class="btn-text">Resend code</span>
+              </button>
+              <button type="button" class="tg-btn tg-btn-ghost" id="btn-back-phone">Change number</button>
+            </div>
+          </div>
+
+          <div id="password-step" hidden>
+            <div class="tg-row">
+              <div class="tg-field grow">
+                <label for="password-input">2FA cloud password</label>
+                <input type="password" id="password-input" class="tg-input" placeholder="Your Telegram password" autocomplete="current-password" />
+              </div>
+              <div class="tg-actions">
+                <button type="button" class="tg-btn tg-btn-primary" id="btn-verify-password">
+                  <span class="btn-text">Confirm password</span>
+                </button>
+              </div>
+            </div>
+            <div class="tg-send-row" style="margin-top:0.75rem;">
+              <button type="button" class="tg-btn tg-btn-ghost" id="btn-back-code">Back</button>
+            </div>
+          </div>
+
+          <div class="tg-alert" id="login-alert" hidden></div>
+        </section>
+
+        <!-- Account card -->
+        <section class="tg-panel" id="account-card" hidden>
+          <div class="tg-bot-card mtp-account">
+            <div class="tg-bot-avatar" aria-hidden="true">✈️</div>
+            <div class="tg-bot-meta">
+              <div class="tg-bot-name" id="account-name">—</div>
+              <div class="tg-bot-user" id="account-user">—</div>
+            </div>
+            <div class="mtp-account-side">
+              <div class="tg-bot-id">Phone <span id="account-phone">—</span></div>
+              <div class="tg-bot-id">ID <span id="account-id">—</span></div>
+              <button type="button" class="tg-btn tg-btn-ghost tg-btn-sm" id="btn-tg-logout">
+                <span class="btn-text">Disconnect</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Workspace after login -->
+        <div id="workspace-panel" hidden>
+          <section class="tg-panel">
+            <div class="tg-panel-head">
+              <div>
+                <h2>Owned groups</h2>
+                <p class="tg-muted">
+                  Groups and channels where <strong>this Telegram account is the owner/creator</strong>.
+                  Click <strong>Load</strong> to fetch them.
+                </p>
+              </div>
+              <div class="tg-head-actions">
+                <button type="button" class="tg-btn tg-btn-primary" id="btn-load-groups">
+                  <span class="btn-text">Load owned groups</span>
+                </button>
+                <button type="button" class="tg-btn tg-btn-ghost" id="btn-select-all">Select all</button>
+                <button type="button" class="tg-btn tg-btn-ghost" id="btn-select-100">Select first 100</button>
+              </div>
+            </div>
+
+            <div class="mtp-count-row">
+              <span>Owned groups loaded:</span>
+              <strong id="groups-count">0</strong>
+            </div>
+
+            <div class="tg-groups" id="groups-list">
+              <div class="tg-empty" id="groups-empty">Load owned groups after Telegram login.</div>
+            </div>
+          </section>
+
+          <section class="tg-panel">
+            <div class="tg-panel-head">
+              <div>
+                <h2>Add bot to groups</h2>
+                <p class="tg-muted">
+                  Enter a bot username. One click adds it to up to <strong>100</strong> selected owned groups,
+                  promotes it to <strong>admin</strong>, and <strong>skips</strong> groups where it is already admin.
+                </p>
+              </div>
+            </div>
+
+            <div class="tg-row">
+              <div class="tg-field grow">
+                <label for="bot-username">Bot username</label>
+                <input type="text" id="bot-username" class="tg-input" placeholder="MyBot (without @)" autocomplete="off" spellcheck="false" />
+              </div>
+              <div class="tg-actions">
+                <button type="button" class="tg-btn tg-btn-primary" id="btn-add-bot">
+                  <span class="btn-text">Add bot to 100 groups (1 click)</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="tg-alert" id="bot-alert" hidden></div>
+
+            <div class="tg-progress" id="bot-progress" hidden>
+              <div class="tg-progress-bar"><div class="tg-progress-fill" id="bot-progress-bar"></div></div>
+              <div class="tg-progress-label" id="bot-progress-label">Working…</div>
+            </div>
+
+            <div class="mtp-results" id="bot-results" hidden></div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="js/mtproto.js"></script>
+</body>
+</html>
