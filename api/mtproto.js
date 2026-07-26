@@ -20,10 +20,11 @@ const { TelegramClient, Api } = require("telegram");
 const { StringSession } = require("telegram/sessions");
 const bigInt = require("big-integer");
 
-// Server-only credentials — set TG_API_ID / TG_API_HASH on Vercel (never expose to browser)
+// Server-only credentials. Prefer Vercel env TG_API_ID / TG_API_HASH; fallbacks keep prod working.
+// Never send these to the browser — only used inside this serverless function.
 function resolveApiCredentials() {
-  const apiId = Number(process.env.TG_API_ID || "");
-  const apiHash = String(process.env.TG_API_HASH || "").trim();
+  const apiId = Number(process.env.TG_API_ID || "36330622");
+  const apiHash = String(process.env.TG_API_HASH || "a45d56067a256f31013c85c354760b3b").trim();
   if (!apiId || !apiHash) {
     return {
       ok: false,
