@@ -5,7 +5,9 @@
   "description": "AndroGRAM — premium landing + Firebase auth + Telegram + MTProto automation",
   "scripts": {
     "start": "npx serve .",
-    "minify": "node scripts/minify-js.mjs"
+    "shell": "node scripts/make-shell.mjs",
+    "minify": "node scripts/minify-js.mjs",
+    "prepare:web": "node scripts/make-shell.mjs && node scripts/minify-js.mjs"
   },
   "dependencies": {
     "telegram": "^2.26.22"

@@ -15,6 +15,7 @@ const root = path.resolve(__dirname, "..");
 const dist = path.join(root, "dist");
 
 const jsFiles = [
+  "js/boot.js",
   "js/app-shell.js",
   "js/auth.js",
   "js/dashboard.js",
@@ -51,8 +52,9 @@ rimraf(dist);
 fs.mkdirSync(path.join(dist, "js"), { recursive: true });
 
 // Copy static assets
-for (const dir of ["css", "api"]) {
-  copyDir(path.join(root, dir), path.join(dist, dir));
+for (const dir of ["css", "api", "js/v"]) {
+  const srcDir = path.join(root, dir);
+  if (fs.existsSync(srcDir)) copyDir(srcDir, path.join(dist, dir));
 }
 for (const f of fs.readdirSync(root)) {
   if (/\.(html|json|md)$/i.test(f) || f === ".env.example" || f === ".gitignore") {

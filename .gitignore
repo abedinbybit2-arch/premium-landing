@@ -2,6 +2,7 @@
 .firebaserc
 node_modules/
 dist/
+js/v/
 .env
 .env.*
 !.env.example
